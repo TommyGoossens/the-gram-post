@@ -1,26 +1,21 @@
 using System;
-using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
-using Firebase.Auth;
-using Firebase.Storage;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TheGramPost.Models;
 using TheGramPost.Models.Models;
 
 namespace TheGramPost.Controllers
 {
+    
     [Route("api/[controller]")]
     [ApiController]
-    public class PostController : ControllerBase
+    public class PostController: ControllerBase
     {
-        private readonly PostService _postService;
-        
-        public PostController(IWebHostEnvironment env)
+        private readonly IPostService _postService;
+
+        public PostController(IPostService postService)
         {
-            _postService = new PostService(env);
+            _postService = postService;
         }
 
         [Consumes("multipart/form-data")]
@@ -28,7 +23,6 @@ namespace TheGramPost.Controllers
         public async Task<ActionResult> NewPost()
         {
             if (!(this.Request.ContentLength > 0)) return new BadRequestResult();
-            
             var post = new NewPostDTO(Request.Form);
             await _postService.CreateNewPost(post);
 

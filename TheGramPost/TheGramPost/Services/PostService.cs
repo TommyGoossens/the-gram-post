@@ -1,28 +1,26 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using TheGramPost.Models.Models;
 
 namespace TheGramPost
 {
-    public class PostService
+    public class PostService : IPostService
     {
         
-        private readonly IStorageUtility _storageService;
+        private readonly IStorageUtility _storageUtil;
         private readonly IFirebaseService _firebaseService;
-        private readonly PostService _postService;
-        public PostService(IWebHostEnvironment env)
+        public PostService(IStorageUtility storageUtil, IFirebaseService firebaseService)
         {
-            _storageService = new StorageUtility(env);
-            _firebaseService = new FirebaseService();
+            _storageUtil = storageUtil;
+            _firebaseService = firebaseService;
         }
         public async Task CreateNewPost(NewPostDTO file)
         {
+            DateTime timePosted = DateTime.Now;
             FileStream fs = null;
-            fs = await _storageService.CreateFile(file.Image);
-            string imageUrl = await _firebaseService.UploadFile(fs, file.Image.FileName);
+            fs = await _storageUtil.CreateFile(file.Image);
+            string imageUrl = await _firebaseService.UploadFile(fs,timePosted);
             
         }
     }
