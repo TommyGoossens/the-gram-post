@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using TheGramPost.Models;
 using TheGramPost.Models.Models;
 
 namespace TheGramPost.Controllers
@@ -17,11 +15,11 @@ namespace TheGramPost.Controllers
         }
 
         [Consumes("multipart/form-data")]
-        [HttpPost("test")]
+        [HttpPost("post")]
         public async Task<ActionResult> NewPost([FromForm] NewPostDTO post)
         {
             await _postService.CreateNewPost(post);
-            return new OkResult();
+            return new StatusCodeResult(201);
         }
 
         [HttpGet("{id:int}")]
@@ -29,18 +27,6 @@ namespace TheGramPost.Controllers
         {
             Console.WriteLine($"Getting post {id}");
             return $"Getting post {id}";
-        }
-
-        [HttpGet("posts")]
-        public async Task<List<Post>> GetAllPosts()
-        {
-            return await _postService.GetAllPosts();
-        }
-
-        [HttpGet("users")]
-        public async Task<List<User>> GetAllUsers()
-        {
-            return await _postService.GetAllUsers();
         }
     }
 }

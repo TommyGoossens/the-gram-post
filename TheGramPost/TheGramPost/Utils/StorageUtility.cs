@@ -3,13 +3,14 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using NLog;
 
 namespace TheGramPost
 {
     public class StorageUtility: IStorageUtility
     {
         private readonly IWebHostEnvironment _env;
-
+        private readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public StorageUtility(IWebHostEnvironment env)
         {
             this._env = env;
@@ -19,7 +20,7 @@ namespace TheGramPost
         {
             FileStream fs = null;
             // upload file
-            string folderName = "firebaseFiles";
+            string folderName = "temporary_media_for_upload";
             string path = Path.Combine(_env.ContentRootPath, folderName);
             if (!Directory.Exists(path))
             {
@@ -38,9 +39,17 @@ namespace TheGramPost
             }
         }
 
-        public Task DeleteFile(FileStream path)
+        public async Task DeleteFile(FileStream path)
         {
-            throw new NotImplementedException();
+            try
+            {
+                File.Delete(path.Name);
+                path.DisposeAsync();
+            }
+            catch (ArgumentNullException e)
+            {
+                Logger.Error(e,"Filestream supplied is null");
+            }
         }
     }
 }

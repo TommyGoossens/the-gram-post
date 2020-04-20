@@ -22,9 +22,7 @@ namespace TheGramPost.Helpers
         {
             try
             {
-                var token = await _context.HttpContext.GetTokenAsync("access_token");
-                Logger.Info(token);
-                return token;
+                return await _context.HttpContext.GetTokenAsync("access_token");;
             }
             catch (Exception e)
             {

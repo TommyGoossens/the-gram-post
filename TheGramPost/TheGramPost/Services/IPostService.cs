@@ -8,7 +8,5 @@ namespace TheGramPost
     public interface IPostService
     {
         Task CreateNewPost(NewPostDTO newPost);
-        Task<List<Post>> GetAllPosts();
-        Task<List<User>> GetAllUsers();
     }
 }
