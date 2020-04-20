@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace TheGramPost.Controllers
 {
-    [Authorize]
-    [Route("api/[controller]")]
+    [Route("api/post")]
     [ApiController]
+    [Authorize]
     public class AbstractPostController : ControllerBase
     {
     }

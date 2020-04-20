@@ -4,20 +4,23 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Firebase.Storage;
+using NLog;
 using TheGramPost.Helpers;
 
 namespace TheGramPost
 {
-    public class FirebaseService: IFirebaseService
+    public class FirebaseService : IFirebaseService
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
 //        private const string ApiKey = "AIzaSyBgAq89XA31cyg_o9LMAD5YaxEC0K3re9M";
         private const string Bucket = "the-gram-c0daa.appspot.com";
-        private readonly IAuthHelper _authHelper;
-        
+        private readonly IUserContextHelper _userContextHelper;
 
-        public FirebaseService(IAuthHelper authHelper)
+
+        public FirebaseService(IUserContextHelper userContextHelper)
         {
-            this._authHelper = authHelper;
+            this._userContextHelper = userContextHelper;
         }
 
         public async Task<string> UploadFile(FileStream file, DateTime timePosted)
@@ -26,14 +29,15 @@ namespace TheGramPost
             var fileName = fullFileName[0];
             var extension = fullFileName.Last();
             fileName = $"{fileName}-{timePosted.ToBinary()}.{extension}";
-            var userID = fullFileName[0];
+            var userID = _userContextHelper.GetUserId();
+             
             // Cancellation Token
             var cancellation = new CancellationTokenSource();
             var upload = new FirebaseStorage(
                     Bucket,
                     new FirebaseStorageOptions
                     {
-                        AuthTokenAsyncFactory = _authHelper.GetAuthToken,
+                        AuthTokenAsyncFactory = _userContextHelper.GetAuthToken,
                         ThrowOnCancel = true
                     })
                 .Child($"posts/{userID}")
@@ -46,7 +50,7 @@ namespace TheGramPost
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Logger.Error(e);
                 throw;
             }
         }

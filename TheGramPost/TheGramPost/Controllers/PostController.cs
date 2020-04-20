@@ -1,15 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TheGramPost.Models;
 using TheGramPost.Models.Models;
 
 namespace TheGramPost.Controllers
 {
-    
-    [Route("api/[controller]")]
-    [ApiController]
-    public class PostController: ControllerBase
+    public class PostController : AbstractPostController
     {
         private readonly IPostService _postService;
 
@@ -20,12 +18,9 @@ namespace TheGramPost.Controllers
 
         [Consumes("multipart/form-data")]
         [HttpPost("test")]
-        public async Task<ActionResult> NewPost()
+        public async Task<ActionResult> NewPost([FromForm] NewPostDTO post)
         {
-            if (!(this.Request.ContentLength > 0)) return new BadRequestResult();
-            var post = new NewPostDTO(Request.Form);
             await _postService.CreateNewPost(post);
-
             return new OkResult();
         }
 
@@ -34,6 +29,18 @@ namespace TheGramPost.Controllers
         {
             Console.WriteLine($"Getting post {id}");
             return $"Getting post {id}";
+        }
+
+        [HttpGet("posts")]
+        public async Task<List<Post>> GetAllPosts()
+        {
+            return await _postService.GetAllPosts();
+        }
+
+        [HttpGet("users")]
+        public async Task<List<User>> GetAllUsers()
+        {
+            return await _postService.GetAllUsers();
         }
     }
 }
