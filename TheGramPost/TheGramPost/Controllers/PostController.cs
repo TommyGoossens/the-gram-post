@@ -1,25 +1,34 @@
 using System;
 using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using TheGramPost.Models.Models;
+using NLog;
+using TheGramPost.Domain.Command.NewPostCommand;
+using TheGramPost.Domain.Models.DTO;
+using TheGramPost.Services;
 
 namespace TheGramPost.Controllers
 {
     public class PostController : AbstractPostController
     {
-        private readonly IPostService _postService;
-
-        public PostController(IPostService postService)
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+        private readonly IMediator _mediator;
+        public PostController(IPostService postService, IMediator mediator)
         {
-            _postService = postService;
+            _mediator = mediator;
         }
 
         [Consumes("multipart/form-data")]
         [HttpPost("post")]
-        public async Task<ActionResult> NewPost([FromForm] NewPostDTO post)
+        public async Task<IActionResult> NewPost([FromForm] CreateNewPostRequest post)
         {
-            await _postService.CreateNewPost(post);
-            return new StatusCodeResult(201);
+            var createPostCommand = new CreatePostCommand
+            {
+                Description = post.Description,
+                Image = post.Image
+            };
+            var postCreatedResponse = await _mediator.Send(createPostCommand);
+            return new CreatedResult(postCreatedResponse.MediaURL,postCreatedResponse);
         }
 
         [HttpGet("{id:int}")]

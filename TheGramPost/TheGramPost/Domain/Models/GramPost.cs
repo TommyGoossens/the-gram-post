@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace TheGramPost.Models
+namespace TheGramPost.Domain.Models
 {
     public class GramPost
     {
