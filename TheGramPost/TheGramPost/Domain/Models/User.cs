@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace TheGramPost.Models
+namespace TheGramPost.Domain.Models
 {
     public class User
     {

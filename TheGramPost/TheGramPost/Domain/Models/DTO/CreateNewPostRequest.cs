@@ -1,13 +1,14 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 
-namespace TheGramPost.Models.Models
+namespace TheGramPost.Domain.Models.DTO
 {
-    public class NewPostDTO
+    public class CreateNewPostRequest : IRequest<PostCreatedResponse>
     {
         public IFormFile Image { get; set; }
         public string Description { get; set; }
 
-        public NewPostDTO()
+        public CreateNewPostRequest()
         {
         }
     }

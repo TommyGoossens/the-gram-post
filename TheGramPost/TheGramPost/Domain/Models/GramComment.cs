@@ -1,6 +1,6 @@
 using System;
 
-namespace TheGramPost.Models
+namespace TheGramPost.Domain.Models
 {
     public class GramComment
     {

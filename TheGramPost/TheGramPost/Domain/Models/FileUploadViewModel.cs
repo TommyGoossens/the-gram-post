@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace TheGramPost.Models
+namespace TheGramPost.Domain.Models
 {
     public class FileUploadViewModel
     {
