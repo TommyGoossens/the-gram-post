@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: the-gram-post
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: the-gram-post-service
+spec:
+  selector:
+    app: the-gram-post
+  ports:
+    - port: 80
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: the-gram-post
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: the-gram-post
+  template:
+    metadata:
+      annotations:
+        consul.hashicorp.com/connect-inject: "true"
+      labels:
+        app: the-gram-post
+    spec:
+      containers:
+        - name: the-gram-post
+          image: tommygoossens/the-gram-post:v1
+          env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: ServiceConfig__serviceDiscoveryAddress
+              value: http://consul:8443
+            - name: ServiceConfig__serviceAddress
+              value: http://the-gram:80
+            - name: ServiceConfig__serviceName
+              value: the-gram-post
+            - name: ServiceConfig__serviceId
+              value: the-gram-post-v1
+          ports:
+            - containerPort: 80
+              name: http
+      serviceAccountName: the-gram-post
