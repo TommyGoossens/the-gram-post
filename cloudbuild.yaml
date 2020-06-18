@@ -1,13 +1,13 @@
 steps:
-  - name: gcr.io/$PROJECT_ID/sonar-scanner:latest
-    args:
-      - "-Dsonar.host.url=https://sonarcloud.io"
-      - "-Dsonar.login=${_SONAR_KEY_TOMMY}"
-      - "-Dsonar.organization=tommygoossens"
-      - "-Dsonar.projectKey=TommyGoossens_the-gram-post"
-      - "-Dsonar.projectBaseDir=TheGramPost"
-      - "-Dsonar.branch.name=develop"
-  - name: "gcr.io/cloud-builders/docker"
+#   - name: gcr.io/$PROJECT_ID/sonar-scanner:latest
+#     args:
+#       - "-Dsonar.host.url=https://sonarcloud.io"
+#       - "-Dsonar.login=${_SONAR_KEY_TOMMY}"
+#       - "-Dsonar.organization=tommygoossens"
+#       - "-Dsonar.projectKey=TommyGoossens_the-gram-post"
+#       - "-Dsonar.projectBaseDir=TheGramPost"
+#       - "-Dsonar.branch.name=develop"
+#   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-t", "gcr.io/$PROJECT_ID/the-gram-post:$SHORT_SHA", "."]
 
   - name: "gcr.io/cloud-builders/docker"
