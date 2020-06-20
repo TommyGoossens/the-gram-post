@@ -9,53 +9,45 @@ using RabbitMQ.Client.Events;
 using TheGramPost.Domain.DTO.Request;
 using TheGramPost.Domain.Query.GetPostsOfFollowedUsers;
 using TheGramPost.Domain.Query.GetUserPostsPreviewQuery;
+using TheGramPost.EventBus.Connection;
 using TheGramPost.Properties;
 
-namespace TheGramPost.EventBus
+namespace TheGramPost.EventBus.Channels
 {
-    public class EventBusRabbitMqImpl : IEventBusService, IDisposable
+    public class RabbitMQQueueChannel : RabbitMQAbstractChannel
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        private readonly IRabbitMQPersistentConn _persistentConn;
+        private readonly RabbitMQBaseConnection _connection;
         private readonly IServiceProvider _serviceProvider;
-        private IModel _consumerChannel;
         private readonly string _queueName;
-
-        public EventBusRabbitMqImpl(IRabbitMQPersistentConn persistentConn, IServiceProvider serviceProvider,
+        public RabbitMQQueueChannel(RabbitMQBaseConnection connection, IServiceProvider serviceProvider,
             string queueName)
         {
-            _persistentConn = persistentConn ?? throw new ArgumentNullException(nameof(persistentConn));
-            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _connection = connection;
+            _serviceProvider = serviceProvider;
             _queueName = queueName;
         }
-
-        public IModel CreateConsumerChannel()
+        
+        public override IModel DeclareChannel()
         {
-            if (!_persistentConn.IsConnected)
+            if (!_connection.IsConnected)
             {
                 Logger.Error("No connection while creating consumer channels, retrying.");
-                _persistentConn.TryConnect();
+                _connection.TryConnect();
             }
 
-            var channel = _persistentConn.CreateModel();
-            channel.QueueDeclare(_queueName, durable: false, exclusive: false, autoDelete: false, arguments: null);
-            var consumer = new EventingBasicConsumer(channel);
+            ConsumerChannel = _connection.CreateModel();
+            ConsumerChannel.QueueDeclare(_queueName, durable: false, exclusive: false, autoDelete: false, arguments: null);
+            var consumer = new EventingBasicConsumer(ConsumerChannel);
 
             consumer.Received += ReceivedEvent;
-
-            channel.BasicConsume(_queueName, autoAck: false, consumer: consumer);
-            channel.CallbackException += (sender, ea) =>
-            {
-                Logger.Error("Channel for queue {0} has crashed", _queueName, ea.Exception);
-                _consumerChannel.Dispose();
-                _consumerChannel = CreateConsumerChannel();
-            };
-            Logger.Info("Channel for queue {0} has been created", _queueName);
-            _consumerChannel = channel;
-            return channel;
+            ConsumerChannel.CallbackException += CallbackException;
+            ConsumerChannel.BasicConsume(_queueName, autoAck: false, consumer: consumer);
+            
+            return ConsumerChannel;
         }
-
-        private async void ReceivedEvent(object sender, BasicDeliverEventArgs ea)
+        
+        private void ReceivedEvent(object sender, BasicDeliverEventArgs ea)
         {
             var message = Encoding.UTF8.GetString(ea.Body.ToArray());
             var props = ea.BasicProperties;
@@ -69,9 +61,12 @@ namespace TheGramPost.EventBus
                     var deserializedRequest = JsonConvert.DeserializeObject<PaginatedFeedPostsRequest>(message);
                     SendPostsOfFollowedUsersResponse(deserializedRequest,props,ea.DeliveryTag);
                     break;
+                default:
+                    Logger.Info(ea.RoutingKey);
+                    break;
             }
         }
-
+        
         private async void SendUserPostPreviewsResponse(string userId, IBasicProperties props, ulong tag)
         {
             var query = new GetUserPostsPreviewQuery
@@ -82,7 +77,7 @@ namespace TheGramPost.EventBus
             var mediator = scope.ServiceProvider.GetService<IMediator>();
             var result = await mediator.Send(query);
             scope.Dispose();
-            var channel = _persistentConn.CreateModel();
+            var channel = _connection.CreateModel();
             var replyProps = channel.CreateBasicProperties();
             replyProps.CorrelationId = props.CorrelationId;
             SendResponse(result, props.ReplyTo, replyProps, tag);
@@ -95,28 +90,31 @@ namespace TheGramPost.EventBus
             var result = await mediator.Send(new GetPostsOfFollowedUsersQuery(request.Page,request.FollowedUsers));
             scope.Dispose();
             
-            var channel = _persistentConn.CreateModel();
+            var channel = _connection.CreateModel();
             var replyProps = channel.CreateBasicProperties();
             replyProps.CorrelationId = props.CorrelationId;
             SendResponse(result, props.ReplyTo, replyProps, tag);
         }
 
-        private void SendResponse(object body, string queueName, IBasicProperties props, ulong tag)
+
+        
+        private void SendResponse(object body,string queueName, IBasicProperties props, ulong tag)
         {
             var response = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(body));
-            _consumerChannel.BasicPublish(
+            ConsumerChannel.BasicPublish(
                 exchange: "",
-                routingKey: queueName,
+                routingKey: queueName, 
                 basicProperties: props,
                 body: response);
-
-            _consumerChannel.BasicAck(deliveryTag: tag,
+            
+            ConsumerChannel.BasicAck(deliveryTag: tag,
                 multiple: false);
         }
 
-        public void Dispose()
+
+        public override void Dispose()
         {
-            _consumerChannel?.Dispose();
+            ConsumerChannel?.Dispose();
         }
     }
 }

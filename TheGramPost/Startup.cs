@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
 using NLog;
-using TheGramPost.EventBus;
+using TheGramPost.EventBus.Connection;
 using TheGramPost.Helpers;
 using TheGramPost.Repository;
 using TheGramPost.ServiceDiscovery;
@@ -46,7 +46,7 @@ namespace TheGramPost
             services.AddScoped<IPostService, PostService>();
             services.AddScoped<IUserContextHelper, UserContextHelper>();
             services.AddHttpContextAccessor();
-            services.AddSingleton<RabbitMqPersistentConn>();
+            services.AddSingleton<RabbitMqPersistentConnection>();
             services.AddControllers().AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
@@ -74,11 +74,11 @@ namespace TheGramPost
     
 public static class ApplicationBuilderExtensions
 {
-    public static RabbitMqPersistentConn Listener { get; set; }
+    public static RabbitMqPersistentConnection Listener { get; set; }
 
     public static IApplicationBuilder UseRabbitListener(this IApplicationBuilder app)
     {
-        Listener = app.ApplicationServices.GetService<RabbitMqPersistentConn>();
+        Listener = app.ApplicationServices.GetService<RabbitMqPersistentConnection>();
         var life = app.ApplicationServices.GetService<IHostApplicationLifetime>();
         life.ApplicationStarted.Register(OnStarted);
         life.ApplicationStopping.Register(OnStopping);
@@ -87,11 +87,11 @@ public static class ApplicationBuilderExtensions
 
     private static void OnStarted()
     {
-        Listener.CreateConsumerChannel();
+        Listener.CreatePersistentChannels();
     }
 
     private static void OnStopping()
     {
-        Listener.Disconnect();
+        Listener.DisconnectChannels();
     }
 }
